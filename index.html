@@ -1,0 +1,818 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/>import { useState, useEffect, useRef, useCallback } from "react";
+
+/* ─── Google Fonts ─────────────────────────────────────── */
+const FontLink = () => (
+
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{background:#030810;font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#0d2a50;border-radius:4px}
+    input,button{font-family:'DM Sans',sans-serif}
+  `}</style>
+
+);
+
+/* ─── Colour tokens ─────────────────────────────────────── */
+const C = {
+bg:     "#030810",
+bg2:    "#060d1a",
+bg3:    "#0a1628",
+surf:   "#0d1e35",
+surf2:  "#112440",
+border: "rgba(0,110,220,.2)",
+borderH:"rgba(0,140,255,.55)",
+blue:   "#0057c8",
+blue2:  "#006eff",
+blue3:  "#3d9bff",
+navy:   "#002a6a",
+navyD:  "#001440",
+yellow: "#ffd000",
+yellowL:"#ffe340",
+text:   "#ddeeff",
+muted:  "#5a7aa0",
+green:  "#00c27a",
+red:    "#e63550",
+orange: "#ff7a00",
+};
+
+/* ─── Global styles ─────────────────────────────────────── */
+const GS = `.page{display:none}.page.active{display:block} @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}} @keyframes spin{to{transform:rotate(360deg)}} @keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:0;transform:scale(1.3)}} @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}} .fu{animation:fadeUp .35s ease forwards;opacity:0} .fu1{animation-delay:.05s}.fu2{animation-delay:.1s}.fu3{animation-delay:.15s}.fu4{animation-delay:.2s} .spin{animation:spin .7s linear infinite} .grid-bg{ position:fixed;inset:0;pointer-events:none;z-index:0; background-image: linear-gradient(rgba(0,100,220,.04) 1px,transparent 1px), linear-gradient(90deg,rgba(0,100,220,.04) 1px,transparent 1px); background-size:48px 48px; } .scanline{ position:fixed;inset:0;pointer-events:none;z-index:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,80,180,.015) 2px,rgba(0,80,180,.015) 4px); }`;
+
+/* ─── Seed data – popular GAMMA products ───────────────── */
+const SEED = [
+{ id:1, name:"Bosch GSR 18V-55 Accuboormachine", brand:"Bosch Professional", cat:"Gereedschap", price:179.99, oldPrice:219.99, rating:4.8, reviews:342, badge:"SALE",
+img:"https://www.bosch-do-it.com/media/im/Images/products/3165140947268-400x400.jpg",
+desc:"Professionele accuboormachine met 18V Li-Ion accu. Max. koppel 55 Nm. Compact design voor moeilijk bereikbare plekken.",
+specs:{"Spanning":"18V","Max. koppel":"55 Nm","Max. boordiameter":"13 mm","Gewicht":"1,9 kg","Accu":"2,0 Ah","Garantie":"3 jaar"},
+tip:"Bestseller! Adviseer altijd een extra accu. Past op het volledige Bosch 18V systeem. Bij intensief gebruik: 4,0 Ah aanbevelen." },
+{ id:2, name:"Kärcher K5 Power Control", brand:"Kärcher", cat:"Tuin", price:299.00, oldPrice:349.00, rating:4.9, reviews:567, badge:"SALE",
+img:"https://www.kaercher.com/content/dam/presales/global/products/consumer/high-pressure-washers/k-5-power-control-1_600x600.jpg",
+desc:"145 bar hogedrukreiniger met Power Control drukregeling. Home Kit inclusief patio-cleaner. Watergekoelde motor voor langdurig gebruik.",
+specs:{"Druk":"145 bar","Debiet":"500 l/h","Vermogen":"2100 W","Slanglengte":"8 m","Gewicht":"15,1 kg","App":"Kärcher"},
+tip:"Onze absolute bestseller! Patio-cleaner altijd erbij verkopen. Winteropslag: slang leeg laten lopen anders bevriest de pomp!" },
+{ id:3, name:"Weber Original Kettle E-5730 57cm", brand:"Weber", cat:"BBQ", price:279.00, rating:4.9, reviews:267, badge:"TIP",
+img:"https://www.weber.com/INTL/content/dam/Weber_Master_Brand/Grills/Kettle/Charcoal-Grills/14501004/Grills_Original-Kettle-E5730_Black_001.jpg",
+desc:"Iconische kettle BBQ Ø57cm. Geëmailleerde stalen kook- en dekselschaal. Gietijzeren rooster. 10 jaar garantie op deksel en kom.",
+specs:{"Diameter":"57 cm","Rooster":"Gietijzer","Materiaal":"Geëmailleerd staal","Garantie":"10 jaar","Gewicht":"14,5 kg"},
+tip:"Seizoenstip! Altijd houtskool en aanmaakblokjes erbij tonen. Lente/zomer topverkoper. Weber-accessoires goed bij door te verkopen." },
+{ id:4, name:"Philips Hue Starter Kit E27 Color", brand:"Philips Hue", cat:"Verlichting", price:149.99, oldPrice:179.99, rating:4.8, reviews:423, badge:"SALE",
+img:"https://www.philips-hue.com/media_b4e2e2ccacca1e39b12f55adf11a2aa9de54c39b.jpg",
+desc:"3 slimme E27 lampen + Bridge. 16 miljoen kleuren, instelbare kleurtemperatuur. Werkt met Alexa, Google Home en Apple HomeKit.",
+specs:{"Fitting":"E27","Vermogen":"9W per lamp","Lumen":"800 lm","Kleuren":"16 miljoen","Bridge":"Inbegrepen","Compatibel":"Alexa / Google / Apple"},
+tip:"Altijd de starter kit verkopen, nooit losse lamp zonder bridge. Max. 50 lampen per bridge. Klant uitleggen: 1 bridge voor heel het huis." },
+{ id:5, name:"Stanley FatMax Meetlint 5m", brand:"Stanley", cat:"Gereedschap", price:14.99, rating:4.7, reviews:892,
+img:"https://www.stanley.com/content/dam/stanley-tools/images/product-images/Tape-Measures/STHT36803-0.jpg",
+desc:"Professioneel 5 m meetlint met automatische rem en duimvergrendeling. Dubbele markering mm/inch. Valbestendige ABS-behuizing.",
+specs:{"Lengte":"5 m","Bandbreedte":"25 mm","Nauwkeurigheid":"Klasse II","Bandmateriaal":"Staal","Behuizing":"ABS schokbestendig"},
+tip:"Meest verkochte meetlint. Voor grotere projecten 8 m of 10 m adviseren. Klanten met nieuwe woning: 2 stuks aanraden." },
+{ id:6, name:"Grohe Eurosmart Keukenmengkraan Chroom", brand:"Grohe", cat:"Sanitair", price:89.99, rating:4.5, reviews:134,
+img:"https://images.grohe.com/medias/sys_master/images/images/h66/h5e/9074745286686.jpg",
+desc:"Elegante keukenmengkraan met hoge uitloop (19 cm). Éénhendelbediening, StarLight anti-kalkcoating. 5 jaar garantie.",
+specs:{"Finish":"Chroom","Uitloophoogte":"19 cm","Aansluiting":"½"","Garantie":"5 jaar","Certificering":"WRAS"},
+tip:"Check altijd standaard ½" aansluiting. Flexibele aansluitslangen altijd extra adviseren! Bijpassende douchekraan beschikbaar." },
+];
+
+const CATS = ["Gereedschap","Verf","Vloer","Tuin","Sanitair","Elektra","Verlichting","BBQ","Bevestiging","Isolatie","Klimaat","Deuren"];
+const CAT_EMOJI = {"Gereedschap":"🔧","Verf":"🎨","Vloer":"🪵","Tuin":"🌿","Sanitair":"🚿","Elektra":"⚡","Verlichting":"💡","BBQ":"🔥","Bevestiging":"🔩","Isolatie":"🧱","Klimaat":"🌡️","Deuren":"🚪"};
+
+const TIPS_DATA = [
+{e:"🎨",t:"Verf: Binnen vs Buiten",p:"Binnenverf = watergedragen, lage geur. Buitenverf = UV-bestendig en weerbestendig. Nooit binnenverf buiten gebruiken -- verkleurt en bladdert. Altijd primer op nieuw gipskarton of kaal hout. Tip: altijd 2 lagen voor optimale dekking."},
+{e:"⚡",t:"Elektra veilig adviseren",p:"Alles in de meterkast = erkend installateur (wettelijk verplicht in NL). Stopcontacten en schakelaars zelf plaatsen mag, maar groep eerst uitschakelen! Nederland: type F Schuko met randaarde standaard."},
+{e:"🪵",t:"Laminaat vs PVC vloer",p:"Laminaat: goedkoper, mooie houtlook, maar NIET vochtbestendig. PVC-click: 100% waterbestendig, ook voor badkamer/keuken. Vloerverwarming: check altijd maximale temperatuur. Altijd ondervloer erbij adviseren!"},
+{e:"🔧",t:"Juist gereedschap adviseren",p:"Schroeven in hout/metaal: accuboormachine. Boren in beton/steen: klopboormachine of SDS-boor. Recht zagen: cirkelzaag. Bochten: decoupeerzaag. Vraag altijd: welk materiaal en welke klus?"},
+{e:"🌿",t:"Tuin: Seizoensgids",p:"Lente: bemesting, zaaien, gazon renoveren. Zomer: onkruid, beregening. Herfst: bollen planten, composteren. Winter: gereedschap schoonmaken, hogedrukreiniger leeg laten lopen. Altijd winterklaar-checklist meegeven!"},
+{e:"🔩",t:"Bevestigingsmiddelen kiezen",p:"Hout-op-hout: houtschroef. Baksteen: nylonplug. Gipsplaat: vlindermoorplug. Beton zwaar gewicht: chemisch anker. ALTIJD inox (roestvrij staal) buiten gebruiken, nooit gegalvaniseerd!"},
+{e:"💡",t:"LED verlichting adviseren",p:"LED vervangt gloeilamp op dezelfde fitting. 80% minder stroom. 2700K = warm gezellig. 4000K = neutraal werkruimte. 6500K = daglicht. Dimbare LED vereist speciale LED-dimmer, niet de oude dimmer!"},
+{e:"🚿",t:"Sanitair aansluitmaten NL",p:"Keukenkraan en badkamerkraan: ½" standaard. Stortbak: ⅜". Altijd controleren voor advies! Flexibele aansluitslangen extra adviseren bij elke kraan. Bij kalkhoudend water: anti-kalkbehandeling aanbevelen."},
+];
+
+/* ═══════════════════════════════════════════════════════════
+MAIN COMPONENT
+══════════════════════════════════════════════════════════════ */
+export default function GammaPro() {
+const [page, setPage]           = useState("home");
+const [query, setQuery]         = useState("");
+const [dropItems, setDropItems] = useState([]);
+const [dropOpen, setDropOpen]   = useState(false);
+const [results, setResults]     = useState([]);
+const [aiCards, setAiCards]     = useState([]);
+const [loading, setLoading]     = useState(false);
+const [favs, setFavs]           = useState(() => JSON.parse(localStorage.getItem("gp_favs")||"[]"));
+const [cmps, setCmps]           = useState([]);
+const [modal, setModal]         = useState(null);
+const [activeTab, setActiveTab] = useState("info");
+const [aiMessages, setAiMessages] = useState([{role:"bot", text:"Hoi! 👷 Ik ben je GAMMA Pro AI-assistent.\n\nStel me een vraag over elk product, klustip of klantadvies -- ik zoek het op!"}]);
+const [aiInput, setAiInput]     = useState("");
+const [aiTyping, setAiTyping]   = useState(false);
+const [bcInput, setBcInput]     = useState("");
+const [bcResult, setBcResult]   = useState(null);
+const [bcStatus, setBcStatus]   = useState("");
+const [toast, setToast]         = useState("");
+const [toastVisible, setToastVisible] = useState(false);
+const searchRef = useRef(null);
+const aiEndRef  = useRef(null);
+
+/* persist favs */
+useEffect(() => { localStorage.setItem("gp_favs", JSON.stringify(favs)); }, [favs]);
+
+/* toast helper */
+const showToast = useCallback((msg) => {
+setToast(msg); setToastVisible(true);
+setTimeout(() => setToastVisible(false), 2200);
+}, []);
+
+/* close dropdown on outside click */
+useEffect(() => {
+const h = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setDropOpen(false); };
+document.addEventListener("mousedown", h);
+return () => document.removeEventListener("mousedown", h);
+}, []);
+
+/* scroll AI to bottom */
+useEffect(() => { aiEndRef.current?.scrollIntoView({ behavior:"smooth" }); }, [aiMessages, aiTyping]);
+
+/* ── Live dropdown ──────────────────────────────────── */
+const handleQueryChange = (v) => {
+setQuery(v);
+if (v.length < 2) { setDropOpen(false); return; }
+const hits = SEED.filter(p => p.name.toLowerCase().includes(v.toLowerCase()) || p.brand.toLowerCase().includes(v.toLowerCase()));
+setDropItems(hits);
+setDropOpen(true);
+};
+
+/* ── Main search ────────────────────────────────────── */
+const doSearch = async (q = query) => {
+if (!q.trim()) return;
+setDropOpen(false);
+setPage("search");
+setAiCards([]);
+const local = SEED.filter(p =>
+p.name.toLowerCase().includes(q.toLowerCase()) ||
+p.brand.toLowerCase().includes(q.toLowerCase()) ||
+p.cat.toLowerCase().includes(q.toLowerCase())
+);
+setResults(local);
+setLoading(true);
+await fetchAIProducts(q);
+setLoading(false);
+};
+
+/* ── AI product search via Anthropic ───────────────── */
+const fetchAIProducts = async (q) => {
+const prompt = `Je bent een GAMMA bouwmarkt productexpert. Zoek echte, actuele producten voor: "${q}".
+
+Geef een JSON array met precies 4 producten. Elk product heeft:
+
+- name: volledige productnaam met merk en model
+- brand: merknaam
+- cat: categorie in het Nederlands
+- price: realistische Nederlandse verkoopprijs als getal (geen tekst)
+- rating: getal tussen 4.0 en 5.0
+- reviews: realistisch aantal als integer
+- desc: 2-3 zinnen Nederlandse omschrijving (waarvoor, hoe, wanneer te gebruiken)
+- specs: object met precies 6 key-value paren (technische specs, beide strings)
+- tip: 2 zinnen praktische medewerkerstip voor klantadvies
+- badge: "SALE", "NIEUW" of null
+
+Geef ALLEEN de JSON array terug. Geen markdown, geen backticks, geen uitleg.`;
+
+```
+try {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1500,
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  const data = await res.json();
+  const txt = data.content.filter(b => b.type === "text").map(b => b.text).join("");
+  const clean = txt.replace(/```json|```/g, "").trim();
+  const arr = JSON.parse(clean);
+  setAiCards(arr);
+} catch (err) {
+  console.error(err);
+}
+```
+
+};
+
+/* ── AI Chat ────────────────────────────────────────── */
+const sendAIChat = async () => {
+const q = aiInput.trim();
+if (!q) return;
+setAiInput("");
+setAiMessages(m => […m, { role:"user", text:q }]);
+setAiTyping(true);
+try {
+const history = […aiMessages.filter(m=>m.role!=="bot"||aiMessages.indexOf(m)>0), {role:"user",text:q}];
+const res = await fetch("https://api.anthropic.com/v1/messages", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+model: "claude-sonnet-4-20250514",
+max_tokens: 400,
+system: "Je bent een GAMMA bouwmarkt medewerker-assistent. Geef korte, praktische Nederlandse antwoorden over producten, klustips en klantadvies. Maximaal 3 zinnen. Direct en to-the-point.",
+tools: [{ type: "web_search_20250305", name: "web_search" }],
+messages: history.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
+}),
+});
+const data = await res.json();
+const ans = data.content.filter(b => b.type === "text").map(b => b.text).join("");
+setAiMessages(m => […m, { role:"bot", text: ans || "Geen antwoord gevonden." }]);
+} catch {
+setAiMessages(m => […m, { role:"bot", text: "Verbindingsfout. Probeer opnieuw." }]);
+}
+setAiTyping(false);
+};
+
+/* ── Barcode lookup ─────────────────────────────────── */
+const doBarcode = async () => {
+const code = bcInput.trim();
+if (!code) return;
+setBcStatus("loading");
+setBcResult(null);
+try {
+const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+const d = await r.json();
+if (d.status === 1 && d.product) {
+const p = d.product;
+setBcResult({
+name: p.product_name || p.product_name_nl || "Onbekend product",
+brand: p.brands || "",
+img: p.image_front_small_url || "",
+desc: p.generic_name_nl || p.generic_name || p.categories || "",
+specs: { "EAN-code": code, Merk: p.brands||"--", Hoeveelheid: p.quantity||"--", Herkomst: (p.countries_tags?.[0]||"--").replace("en:","").replace(/-/g," "), Categorie: (p.categories||"--").split(",")[0] },
+tip: "Gevonden via Open Food Facts database.",
+rating: 4.2, reviews: 0,
+});
+setBcStatus("found");
+} else {
+setBcStatus("ai");
+await bcAI(code);
+}
+} catch { setBcStatus("ai"); await bcAI(code); }
+};
+
+const bcAI = async (code) => {
+try {
+const res = await fetch("https://api.anthropic.com/v1/messages", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+model: "claude-sonnet-4-20250514",
+max_tokens: 500,
+tools: [{ type: "web_search_20250305", name: "web_search" }],
+messages: [{ role:"user", content:`Zoek het product met EAN/barcode: ${code}. Geef JSON: name, brand, cat, desc (NL), specs (6 key-value), tip (NL), rating, reviews. Alleen JSON.` }],
+}),
+});
+const data = await res.json();
+const txt = data.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+const p = JSON.parse(txt.replace(/`json|`/g,"").trim());
+setBcResult(p);
+setBcStatus("found");
+} catch { setBcStatus("notfound"); }
+};
+
+/* ── Favorites ──────────────────────────────────────── */
+const toggleFav = (id) => {
+setFavs(f => f.includes(id) ? f.filter(x=>x!==id) : […f, id]);
+showToast(favs.includes(id) ? "Verwijderd uit favorieten" : "Toegevoegd aan favorieten ❤️");
+};
+
+/* ── Compare ────────────────────────────────────────── */
+const toggleCmp = (p) => {
+const key = p.id || p.name;
+if (cmps.find(c => (c.id||c.name) === key)) {
+setCmps(c => c.filter(x => (x.id||x.name) !== key));
+} else if (cmps.length < 3) {
+setCmps(c => […c, p]);
+showToast("Toegevoegd aan vergelijking ⚖️");
+} else {
+showToast("Max. 3 producten vergelijken");
+}
+};
+
+/* ── Helpers ────────────────────────────────────────── */
+const stars = (r) => "★".repeat(Math.floor(r||4)) + "☆".repeat(5-Math.floor(r||4));
+const fmt   = (p) => typeof p==="number" ? `€${p.toFixed(2)}` : (p||"--");
+const nav   = (p) => { setPage(p); window.scrollTo(0,0); };
+
+/* ═══════════════════════════════════════════════════════
+RENDER
+════════════════════════════════════════════════════════ */
+return (
+<>
+<FontLink />
+<style>{GS}</style>
+
+```
+  {/* Background effects */}
+  <div className="grid-bg" />
+  <div className="scanline" />
+
+  {/* HEADER */}
+  <header style={{ position:"sticky", top:0, zIndex:200, background:"rgba(3,8,16,.94)", backdropFilter:"blur(20px)", borderBottom:`1px solid ${C.border}`, height:58, display:"flex", alignItems:"center", gap:12, padding:"0 14px" }}>
+    {/* Logo */}
+    <div onClick={() => nav("home")} style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, cursor:"pointer" }}>
+      <div style={{ position:"relative", width:34, height:34, background:C.yellow, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:`0 0 16px rgba(255,208,0,.35)` }}>
+        <span style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:20, color:C.navyD }}>G</span>
+        <div style={{ position:"absolute", inset:-3, borderRadius:11, border:`1px solid rgba(255,208,0,.25)`, animation:"pulse 2.5s ease-in-out infinite" }} />
+      </div>
+      <span style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:20, color:C.yellow, letterSpacing:3 }}>PRO</span>
+    </div>
+
+    {/* Search */}
+    <div ref={searchRef} style={{ flex:1, position:"relative" }}>
+      <input
+        value={query}
+        onChange={e => handleQueryChange(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && doSearch()}
+        placeholder="Zoek elk product op internet..."
+        style={{ width:"100%", height:38, background:C.surf, border:`1px solid ${C.border}`, borderRadius:100, padding:"0 42px 0 16px", fontSize:14, color:C.text, outline:"none", transition:"all .2s" }}
+        onFocus={e => { e.target.style.borderColor = C.blue2; e.target.style.boxShadow = `0 0 0 3px rgba(0,110,255,.12)`; }}
+        onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+      />
+      <button onClick={() => doSearch()} style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", width:28, height:28, borderRadius:"50%", border:"none", background:C.blue2, color:"white", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>🔍</button>
+
+      {/* Dropdown */}
+      {dropOpen && (
+        <div style={{ position:"absolute", top:46, left:0, right:0, background:C.surf2, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:`0 20px 60px rgba(0,0,0,.7)`, overflow:"hidden", zIndex:500, maxHeight:"55vh", overflowY:"auto" }}>
+          {dropItems.length > 0 && (
+            <>
+              <div style={{ padding:"9px 14px 5px", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.blue3 }}>Producten</div>
+              {dropItems.slice(0,4).map(p => (
+                <div key={p.id} onClick={() => { setModal(p); setActiveTab("info"); setDropOpen(false); }} style={{ display:"flex", alignItems:"center", gap:11, padding:"10px 14px", cursor:"pointer", borderBottom:`1px solid rgba(255,255,255,.04)` }}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,100,200,.15)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{ width:40, height:40, borderRadius:9, background:"white", flexShrink:0, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <img src={p.img} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:3 }} onError={e=>{ e.target.style.display="none"; }} />
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:600, fontSize:13, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.name}</div>
+                    <div style={{ fontSize:11, color:C.muted }}>{p.brand}</div>
+                  </div>
+                  <div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:17, color:C.yellow, flexShrink:0 }}>{fmt(p.price)}</div>
+                </div>
+              ))}
+            </>
+          )}
+          <div onClick={() => doSearch()} style={{ display:"flex", alignItems:"center", gap:11, padding:"10px 14px", cursor:"pointer", borderTop:`1px solid ${C.border}` }}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(0,100,200,.15)"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <div style={{ width:40, height:40, borderRadius:9, background:`linear-gradient(135deg,${C.navy},${C.blue2})`, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🤖</div>
+            <div>
+              <div style={{ fontWeight:600, fontSize:13, color:C.blue3 }}>Zoek via AI: "{query}"</div>
+              <div style={{ fontSize:11, color:C.muted }}>Doorzoekt het volledige internet</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </header>
+
+  {/* MAIN */}
+  <div style={{ padding:"14px 14px 80px", position:"relative", zIndex:1 }}>
+
+    {/* ── HOME ── */}
+    {page === "home" && (
+      <div>
+        {/* Hero */}
+        <div className="fu" style={{ background:`linear-gradient(135deg,${C.navyD} 0%,${C.navy} 55%,${C.blue} 100%)`, borderRadius:18, padding:"22px 18px", marginBottom:20, position:"relative", overflow:"hidden", border:`1px solid rgba(0,130,255,.2)` }}>
+          <div style={{ position:"absolute", top:-50, right:-50, width:180, height:180, background:"radial-gradient(circle,rgba(255,208,0,.1),transparent 70%)", borderRadius:"50%" }} />
+          <div style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(255,208,0,.1)", border:"1px solid rgba(255,208,0,.2)", borderRadius:100, padding:"4px 12px", fontSize:11, fontWeight:700, color:C.yellow, letterSpacing:.5, textTransform:"uppercase", marginBottom:10 }}>⚡ GAMMA Medewerkers Portaal</div>
+          <h1 style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:28, color:"white", lineHeight:1.1, marginBottom:6 }}>Elk product.<br /><span style={{ color:C.yellow }}>Direct gevonden.</span></h1>
+          <p style={{ fontSize:13, color:"rgba(255,255,255,.6)", marginBottom:16, lineHeight:1.55 }}>Zoek miljoenen producten · Echte foto's · Volledige specs · Medewerkerstips</p>
+          <button onClick={() => nav("search")} style={{ background:C.yellow, color:C.navyD, border:"none", borderRadius:100, padding:"10px 24px", fontWeight:700, fontSize:13, cursor:"pointer", boxShadow:`0 4px 16px rgba(255,208,0,.3)` }}>Zoek een product →</button>
+        </div>
+
+        {/* Quick buttons */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:22 }}>
+          {[{i:"🔍",l:"Zoeken",a:()=>nav("search")},{i:"🤖",l:"AI Hulp",a:()=>nav("ai")},{i:"📷",l:"Barcode",a:()=>nav("barcode")},{i:"💡",l:"Tips",a:()=>nav("tips")}].map((b,i) => (
+            <button key={i} onClick={b.a} style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 8px", display:"flex", flexDirection:"column", alignItems:"center", gap:6, cursor:"pointer", transition:"all .2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=C.blue2;e.currentTarget.style.background=C.surf2;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.surf;}}>
+              <span style={{ fontSize:24 }}>{b.i}</span>
+              <span style={{ fontSize:11, fontWeight:600, color:C.muted }}>{b.l}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Categories */}
+        <SectionHeader title="Categorieën" />
+        <div style={{ display:"flex", gap:9, overflowX:"auto", paddingBottom:4, marginBottom:20, scrollbarWidth:"none" }}>
+          {CATS.map(c => (
+            <div key={c} onClick={() => { setQuery(c); doSearch(c); }} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, background:C.surf, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px", cursor:"pointer", flexShrink:0, minWidth:68, transition:"all .2s" }}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=C.blue2;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;}}>
+              <span style={{ fontSize:22 }}>{CAT_EMOJI[c]||"📦"}</span>
+              <span style={{ fontSize:10, fontWeight:700, color:C.muted, whiteSpace:"nowrap" }}>{c}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Popular products */}
+        <SectionHeader title="Populaire producten" more="Alles →" onMore={() => nav("search")} />
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
+          {SEED.map((p,i) => (
+            <ProductCard key={p.id} p={p} isFav={favs.includes(p.id)} onFav={() => toggleFav(p.id)} onClick={() => { setModal(p); setActiveTab("info"); }} delay={i} />
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* ── SEARCH ── */}
+    {page === "search" && (
+      <div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+          <div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:20, color:C.text, display:"flex", alignItems:"center", gap:8 }}>
+            🔍 <span style={{ color:C.blue3 }}>{query ? `"${query}"` : "Zoeken"}</span>
+          </div>
+          <div style={{ fontSize:12, color:C.muted }}>{results.length + aiCards.length} resultaten</div>
+        </div>
+
+        {/* Cat chips */}
+        <div style={{ display:"flex", gap:9, overflowX:"auto", paddingBottom:4, marginBottom:16, scrollbarWidth:"none" }}>
+          {CATS.map(c => (
+            <div key={c} onClick={() => { setQuery(c); doSearch(c); }} style={{ display:"flex", alignItems:"center", gap:5, background:C.surf, border:`1px solid ${C.border}`, borderRadius:100, padding:"6px 12px", cursor:"pointer", flexShrink:0, transition:"all .2s" }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor=C.blue2}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+              <span style={{ fontSize:14 }}>{CAT_EMOJI[c]||"📦"}</span>
+              <span style={{ fontSize:11, fontWeight:700, color:C.muted, whiteSpace:"nowrap" }}>{c}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Local results */}
+        {results.map((p,i) => <ProductListItem key={p.id} p={p} isFav={favs.includes(p.id)} onFav={()=>toggleFav(p.id)} onClick={()=>{setModal(p);setActiveTab("info");}} delay={i} />)}
+
+        {/* Divider */}
+        {results.length > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, margin:"16px 0 12px" }}>
+            <div style={{ flex:1, height:1, background:C.border }} />
+            <span style={{ fontSize:10, fontWeight:700, color:C.muted, letterSpacing:.5, whiteSpace:"nowrap" }}>🤖 AI RESULTATEN</span>
+            <div style={{ flex:1, height:1, background:C.border }} />
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"40px 20px", gap:14 }}>
+            <div style={{ width:44, height:44, border:`3px solid ${C.surf2}`, borderTopColor:C.blue2, borderRightColor:C.yellow, borderRadius:"50%", animation:"spin .7s linear infinite" }} />
+            <div style={{ fontSize:13, color:C.muted }}>AI zoekt producten op het internet...</div>
+          </div>
+        )}
+
+        {/* AI cards */}
+        {aiCards.map((p,i) => <AIProductCard key={i} p={p} delay={i} onDetail={()=>{setModal(p);setActiveTab("info");}} onSave={()=>showToast("Opgeslagen ❤️")} onCmp={()=>toggleCmp(p)} />)}
+
+        {/* Empty */}
+        {!loading && results.length === 0 && aiCards.length === 0 && (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"50px 20px", gap:10, textAlign:"center" }}>
+            <span style={{ fontSize:48 }}>🔍</span>
+            <div style={{ fontWeight:700, fontSize:17, color:C.text }}>Zoek iets op</div>
+            <div style={{ fontSize:13, color:C.muted }}>Gebruik de zoekbalk hierboven</div>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* ── FAVORITES ── */}
+    {page === "favorites" && (
+      <div>
+        <SectionHeader title="Favorieten" />
+        {favs.length === 0 ? (
+          <EmptyState icon="🤍" title="Geen favorieten" sub="Tik op het hartje op een product." />
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12 }}>
+            {SEED.filter(p => favs.includes(p.id)).map((p,i) => (
+              <ProductCard key={p.id} p={p} isFav={true} onFav={() => toggleFav(p.id)} onClick={() => { setModal(p); setActiveTab("info"); }} delay={i} />
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* ── COMPARE ── */}
+    {page === "compare" && (
+      <div>
+        <SectionHeader title="Vergelijken" />
+        <p style={{ fontSize:13, color:C.muted, marginBottom:14 }}>Voeg producten toe via ⚖️. Max. 3 producten.</p>
+        {cmps.length === 0 ? (
+          <EmptyState icon="⚖️" title="Niets te vergelijken" sub="Voeg producten toe via het ⚖️ icoon op een product." />
+        ) : (
+          <>
+            <div style={{ display:"flex", flexDirection:"column", gap:9, marginBottom:16 }}>
+              {cmps.map(p => (
+                <div key={p.id||p.name} style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:12, padding:12, display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:44, height:44, background:"white", borderRadius:8, flexShrink:0, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {p.img && <img src={p.img} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:3 }} onError={e=>e.target.style.display="none"} />}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:13, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.name}</div>
+                    <div style={{ fontSize:12, color:C.muted }}>{fmt(p.price)}</div>
+                  </div>
+                  <button onClick={() => setCmps(c => c.filter(x => (x.id||x.name) !== (p.id||p.name)))} style={{ background:"rgba(230,53,80,.8)", color:"white", border:"none", borderRadius:"50%", width:24, height:24, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>✕</button>
+                </div>
+              ))}
+            </div>
+            {cmps.length >= 2 && <CompareTable products={cmps} fmt={fmt} stars={stars} />}
+          </>
+        )}
+      </div>
+    )}
+
+    {/* ── TIPS ── */}
+    {page === "tips" && (
+      <div>
+        <SectionHeader title="Tips & Kennis" />
+        {TIPS_DATA.map((t,i) => (
+          <div key={i} style={{ background:C.surf, border:`1px solid ${C.border}`, borderLeft:`3px solid ${C.blue2}`, borderRadius:14, padding:16, marginBottom:10, animation:"fadeUp .35s ease forwards", animationDelay:`${i*.05}s`, opacity:0 }}>
+            <div style={{ fontWeight:700, fontSize:14, marginBottom:7, display:"flex", alignItems:"center", gap:7 }}>{t.e} {t.t}</div>
+            <div style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>{t.p}</div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* ── BARCODE ── */}
+    {page === "barcode" && (
+      <div>
+        <SectionHeader title="Barcode zoeken" />
+        <div style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:16, padding:18, marginBottom:14 }}>
+          <div style={{ fontSize:13, fontWeight:600, color:C.blue3, marginBottom:12 }}>🔢 Scan of typ barcode / artikelnummer</div>
+          <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+            <input value={bcInput} onChange={e=>setBcInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doBarcode()} placeholder="b.v. 3253562000038" inputMode="numeric"
+              style={{ flex:1, padding:"11px 14px", background:C.bg3, border:`1px solid ${C.border}`, borderRadius:11, fontSize:14, color:C.text, outline:"none" }} />
+            <button onClick={doBarcode} style={{ padding:"11px 18px", background:`linear-gradient(135deg,${C.navy},${C.blue2})`, color:"white", border:"none", borderRadius:11, fontWeight:700, fontSize:13, cursor:"pointer" }}>Zoek</button>
+          </div>
+          {bcStatus === "" && <div style={{ fontSize:13, color:C.muted, textAlign:"center" }}>Voer een barcode of artikelnummer in</div>}
+          {bcStatus === "loading" && <div style={{ fontSize:13, color:C.blue3, textAlign:"center" }}>🔍 Zoeken...</div>}
+          {bcStatus === "ai" && <div style={{ fontSize:13, color:C.blue3, textAlign:"center" }}>🤖 AI zoekt barcode op...</div>}
+          {bcStatus === "notfound" && <div style={{ fontSize:13, color:C.red, textAlign:"center" }}>❌ Product niet gevonden voor code: {bcInput}</div>}
+        </div>
+        {bcStatus === "found" && bcResult && <ProductListItem p={bcResult} isFav={false} onFav={()=>{}} onClick={()=>{setModal(bcResult);setActiveTab("info");}} delay={0} />}
+      </div>
+    )}
+
+    {/* ── AI PAGE ── */}
+    {page === "ai" && (
+      <div style={{ display:"flex", flexDirection:"column", minHeight:"calc(100vh - 140px)" }}>
+        <SectionHeader title="AI Assistent" />
+        <div style={{ flex:1, display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+          {aiMessages.map((m,i) => (
+            <div key={i} style={{ padding:"11px 14px", borderRadius:12, fontSize:13, lineHeight:1.55, maxWidth:"90%", background: m.role==="user" ? `linear-gradient(135deg,${C.navy},${C.blue2})` : C.surf, border: m.role==="user" ? "none" : `1px solid ${C.border}`, color: m.role==="user" ? "white" : C.text, alignSelf: m.role==="user" ? "flex-end" : "flex-start", borderRadius: m.role==="user" ? "12px 12px 4px 12px" : "4px 12px 12px 12px", whiteSpace:"pre-wrap" }}>
+              {m.text}
+            </div>
+          ))}
+          {aiTyping && (
+            <div style={{ display:"flex", gap:4, alignItems:"center", padding:"12px 14px", background:C.surf, border:`1px solid ${C.border}`, borderRadius:"4px 12px 12px 12px", alignSelf:"flex-start" }}>
+              {[0,.15,.3].map((d,i) => <span key={i} style={{ width:7, height:7, background:C.blue3, borderRadius:"50%", display:"inline-block", animation:`bop 1s ${d}s infinite` }} />)}
+            </div>
+          )}
+          <div ref={aiEndRef} />
+        </div>
+        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:12 }}>
+          {["Beste gereedschap voor beginners?","PVC of laminaat kiezen?","Welke buitenverf voor hout?","Hoe boor ik in beton?"].map(s => (
+            <button key={s} onClick={()=>{setAiInput(s);}} style={{ padding:"6px 13px", borderRadius:100, border:`1px solid ${C.blue2}`, background:"transparent", color:C.blue3, fontSize:12, fontWeight:600, cursor:"pointer" }}>{s}</button>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <input value={aiInput} onChange={e=>setAiInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendAIChat()} placeholder="Stel een vraag..."
+            style={{ flex:1, padding:"11px 14px", background:C.surf, border:`1px solid ${C.border}`, borderRadius:12, fontSize:13, color:C.text, outline:"none" }} />
+          <button onClick={sendAIChat} style={{ width:42, height:42, borderRadius:12, background:`linear-gradient(135deg,${C.navy},${C.blue2})`, border:"none", color:"white", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>➤</button>
+        </div>
+      </div>
+    )}
+
+  </div>
+
+  {/* BOTTOM NAV */}
+  <nav style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:200, background:"rgba(3,8,16,.96)", backdropFilter:"blur(20px)", borderTop:`1px solid ${C.border}`, display:"flex", paddingBottom:"env(safe-area-inset-bottom,0)" }}>
+    {[
+      {id:"home",  icon:"⌂",  label:"Home"},
+      {id:"search",icon:"◎",  label:"Zoeken"},
+      {id:"favorites",icon:"♡",label:"Favorieten", badge:favs.length},
+      {id:"compare",  icon:"⇌",label:"Vergelijk",  badge:cmps.length},
+      {id:"ai",    icon:"✦",  label:"AI"},
+    ].map(n => (
+      <button key={n.id} onClick={() => nav(n.id)} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"8px 4px 6px", border:"none", background:"none", color: page===n.id ? C.yellow : C.muted, fontSize:10, fontWeight:600, cursor:"pointer", gap:3, position:"relative", transition:"color .2s" }}>
+        {page === n.id && <div style={{ position:"absolute", top:0, left:"25%", right:"25%", height:2, background:C.yellow, borderRadius:"0 0 3px 3px", boxShadow:`0 0 8px rgba(255,208,0,.5)` }} />}
+        <span style={{ fontSize:20, lineHeight:1 }}>{n.icon}</span>
+        {n.label}
+        {n.badge > 0 && <span style={{ position:"absolute", top:4, right:"calc(50% - 16px)", background:C.yellow, color:C.navyD, fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:10, minWidth:16, textAlign:"center" }}>{n.badge}</span>}
+      </button>
+    ))}
+  </nav>
+
+  {/* MODAL */}
+  {modal && (
+    <div onClick={(e) => e.target === e.currentTarget && setModal(null)} style={{ position:"fixed", inset:0, zIndex:400, background:"rgba(0,0,0,.7)", display:"flex", alignItems:"flex-end", backdropFilter:"blur(4px)" }}>
+      <div style={{ background:C.bg2, border:`1px solid ${C.border}`, borderRadius:"22px 22px 0 0", width:"100%", maxHeight:"92vh", overflowY:"auto", animation:"slideUp .3s cubic-bezier(.34,1.56,.64,1)" }}>
+        <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+        <div style={{ width:36, height:4, background:C.surf2, borderRadius:2, margin:"12px auto 0" }} />
+
+        {/* Hero */}
+        <div style={{ background:`linear-gradient(160deg,${C.navyD},${C.navy} 60%,${C.blue} 100%)`, padding:"20px 18px 24px", position:"relative" }}>
+          <button onClick={() => setModal(null)} style={{ position:"absolute", top:14, right:14, width:32, height:32, borderRadius:"50%", border:"none", background:"rgba(255,255,255,.1)", color:"white", fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          <div style={{ width:110, height:110, background:"white", borderRadius:14, marginBottom:12, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", boxShadow:"0 8px 24px rgba(0,0,0,.3)" }}>
+            {modal.img
+              ? <img src={modal.img} alt={modal.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:8 }} onError={e=>{e.target.style.display="none"; e.target.parentElement.innerHTML='<span style="font-size:48px">📦</span>';}} />
+              : <span style={{ fontSize:48 }}>📦</span>}
+          </div>
+          {modal.badge && <div style={{ display:"inline-block", marginBottom:6, padding:"2px 9px", borderRadius:5, fontSize:10, fontWeight:800, background: modal.badge==="SALE"?"rgba(230,53,80,.85)":"rgba(0,110,255,.85)", color:"white" }}>{modal.badge}</div>}
+          <div style={{ fontSize:11, fontWeight:700, color:C.yellow, textTransform:"uppercase", letterSpacing:.7, marginBottom:4 }}>{modal.cat}</div>
+          <div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:22, color:"white", lineHeight:1.15, marginBottom:4 }}>{modal.name}</div>
+          <div style={{ fontSize:13, color:"rgba(255,255,255,.5)", marginBottom:12 }}>{modal.brand}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:32, color:C.yellow }}>{fmt(modal.price)}</div>
+            {modal.oldPrice && <>
+              <div style={{ fontSize:16, color:"rgba(255,255,255,.3)", textDecoration:"line-through" }}>{fmt(modal.oldPrice)}</div>
+              <div style={{ background:"rgba(230,53,80,.85)", color:"white", fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:5 }}>-{Math.round((1-modal.price/modal.oldPrice)*100)}%</div>
+            </>}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:"flex", borderBottom:`1px solid ${C.border}` }}>
+          {[["info","ℹ️ Info"],["specs","📋 Specs"],["tip","💬 Medewerker"]].map(([id,lbl]) => (
+            <button key={id} onClick={() => setActiveTab(id)} style={{ flex:1, padding:"12px 8px", border:"none", background:"none", fontSize:13, fontWeight:600, color: activeTab===id ? C.blue3 : C.muted, borderBottom: activeTab===id ? `2px solid ${C.blue3}` : "2px solid transparent", cursor:"pointer", whiteSpace:"nowrap" }}>{lbl}</button>
+          ))}
+        </div>
+
+        <div style={{ padding:18 }}>
+          {activeTab === "info" && (
+            <div>
+              <p style={{ fontSize:14, lineHeight:1.7, color:C.muted }}>{modal.desc}</p>
+              {modal.id && <div style={{ marginTop:14, background:C.surf, border:`1px solid ${C.border}`, borderRadius:10, padding:"11px 13px", display:"flex", alignItems:"center", gap:8, fontSize:12, color:C.muted }}>🏷️ Artikel: <strong style={{ color:C.text, fontFamily:"monospace" }}>ART-{String(modal.id).padStart(6,"0")}</strong></div>}
+            </div>
+          )}
+          {activeTab === "specs" && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
+              {Object.entries(modal.specs||{}).map(([k,v]) => (
+                <div key={k} style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 12px" }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:.5, marginBottom:2 }}>{k}</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {activeTab === "tip" && (
+            <div style={{ background:"rgba(0,110,255,.06)", border:`1px solid rgba(0,110,255,.15)`, borderLeft:`3px solid ${C.blue2}`, borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.blue3, marginBottom:6 }}>👷 Medewerkerstip</div>
+              <p style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>{modal.tip}</p>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display:"flex", gap:10, padding:"0 18px 18px" }}>
+          <button onClick={() => { toggleFav(modal.id||modal.name); }} style={{ flex:1, padding:13, borderRadius:12, border:`1px solid ${C.border}`, background:C.surf2, color:C.text, fontWeight:700, fontSize:14, cursor:"pointer" }}>
+            {favs.includes(modal.id) ? "❤️ Opgeslagen" : "🤍 Favoriet"}
+          </button>
+          <button onClick={() => { toggleCmp(modal); setModal(null); }} style={{ flex:1, padding:13, borderRadius:12, border:"none", background:`linear-gradient(135deg,${C.navy},${C.blue2})`, color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>⚖️ Vergelijk</button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* TOAST */}
+  <div style={{ position:"fixed", bottom:"calc(76px + env(safe-area-inset-bottom,0))", left:"50%", transform:`translateX(-50%) translateY(${toastVisible?0:16}px)`, background:C.surf2, border:`1px solid ${C.border}`, color:C.text, padding:"11px 22px", borderRadius:100, fontSize:13, fontWeight:500, zIndex:999, opacity: toastVisible ? 1 : 0, transition:"all .25s", whiteSpace:"nowrap", pointerEvents:"none", boxShadow:"0 4px 24px rgba(0,0,0,.4)" }}>{toast}</div>
+</>
+```
+
+);
+}
+
+/* ─── Sub-components ───────────────────────────────────── */
+
+function SectionHeader({ title, more, onMore }) {
+return (
+<div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+<div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:20, color:C.text, display:"flex", alignItems:"center", gap:8 }}>
+<span style={{ color:C.blue3 }}>{title}</span>
+</div>
+{more && <div onClick={onMore} style={{ fontSize:12, fontWeight:600, color:C.blue3, cursor:"pointer" }}>{more}</div>}
+</div>
+);
+}
+
+function EmptyState({ icon, title, sub }) {
+return (
+<div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"50px 20px", gap:10, textAlign:"center" }}>
+<span style={{ fontSize:48 }}>{icon}</span>
+<div style={{ fontWeight:700, fontSize:17, color:C.text }}>{title}</div>
+<div style={{ fontSize:13, color:C.muted, lineHeight:1.5 }}>{sub}</div>
+</div>
+);
+}
+
+function ProductCard({ p, isFav, onFav, onClick, delay }) {
+const bdgColor = p.badge==="SALE" ? C.red : p.badge==="NIEUW" ? C.blue2 : C.orange;
+return (
+<div className={`fu fu${delay+1}`} onClick={onClick} style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative", display:"flex", flexDirection:"column", transition:"all .2s" }}
+onMouseEnter={e=>e.currentTarget.style.borderColor=C.borderH}
+onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+{p.badge && <span style={{ position:"absolute", top:8, left:8, zIndex:2, padding:"2px 8px", borderRadius:5, fontSize:10, fontWeight:800, background:bdgColor, color:"white" }}>{p.badge}</span>}
+<div onClick={e=>{e.stopPropagation();onFav();}} style={{ position:"absolute", top:8, right:8, zIndex:2, width:28, height:28, borderRadius:"50%", background:"rgba(0,0,0,.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, cursor:"pointer", border:"1px solid rgba(255,255,255,.1)" }}>{isFav?"❤️":"🤍"}</div>
+<div style={{ width:"100%", height:130, background:"white", display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+{p.img ? <img src={p.img} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:8 }} onError={e=>{e.target.style.display="none";e.target.parentElement.innerHTML='<span style="font-size:48px">📦</span>';}} /> : <span style={{ fontSize:48 }}>📦</span>}
+</div>
+<div style={{ padding:10, flex:1, display:"flex", flexDirection:"column" }}>
+<div style={{ fontSize:10, fontWeight:700, color:C.blue3, textTransform:"uppercase", letterSpacing:.5, marginBottom:3 }}>{p.brand}</div>
+<div style={{ fontWeight:700, fontSize:12, lineHeight:1.3, flex:1, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:5 }}>{p.name}</div>
+<div style={{ fontSize:11, color:C.yellow, marginBottom:5 }}>{"★".repeat(Math.floor(p.rating))}{"☆".repeat(5-Math.floor(p.rating))} <span style={{ color:C.muted, fontSize:10 }}>{p.rating} ({p.reviews?.toLocaleString()})</span></div>
+<div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:20, color:C.yellow }}>{`€${p.price?.toFixed(2)}`}</div>
+{p.oldPrice && <div style={{ fontSize:11, color:C.muted, textDecoration:"line-through" }}>{`€${p.oldPrice.toFixed(2)}`}</div>}
+</div>
+</div>
+);
+}
+
+function ProductListItem({ p, isFav, onFav, onClick, delay }) {
+const priceStr = typeof p.price==="number" ? `€${p.price.toFixed(2)}` : (p.price||"--");
+return (
+<div className={`fu fu${Math.min(delay+1,4)}`} onClick={onClick} style={{ background:C.surf, border:`1px solid ${C.border}`, borderRadius:16, padding:14, display:"flex", gap:13, cursor:"pointer", marginBottom:10, transition:"all .2s", alignItems:"flex-start", position:"relative", overflow:"hidden" }}
+onMouseEnter={e=>e.currentTarget.style.borderColor=C.borderH}
+onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+<div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, background:C.blue2, borderRadius:"3px 0 0 3px" }} />
+<div style={{ width:70, height:70, flexShrink:0, background:"white", borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+{p.img ? <img src={p.img} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:4 }} onError={e=>{e.target.style.display="none";}} /> : <span style={{ fontSize:30 }}>📦</span>}
+</div>
+<div style={{ flex:1, minWidth:0 }}>
+<div style={{ fontSize:10, fontWeight:700, color:C.blue3, textTransform:"uppercase", letterSpacing:.5, marginBottom:2 }}>{p.brand||""}</div>
+<div style={{ fontWeight:700, fontSize:14, lineHeight:1.3, marginBottom:4 }}>{p.name}</div>
+{p.desc && <div style={{ fontSize:12, color:C.muted, lineHeight:1.5, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden", marginBottom:6 }}>{p.desc}</div>}
+<div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+<div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:22, color:C.yellow }}>{priceStr}</div>
+<div style={{ fontSize:12, color:C.yellow }}>{"★".repeat(Math.floor(p.rating||4))} {p.rating||"4.5"}</div>
+</div>
+</div>
+</div>
+);
+}
+
+function AIProductCard({ p, delay, onDetail, onSave, onCmp }) {
+const [saved, setSaved] = useState(false);
+const priceStr = typeof p.price==="number" ? `€${p.price.toFixed(2)}` : (p.price||"--");
+const imgSrc = `https://picsum.photos/seed/${encodeURIComponent(p.brand||p.name)}/80/80`;
+return (
+<div style={{ background:C.surf, border:`1px solid ${C.border}`, borderLeft:`3px solid ${C.blue2}`, borderRadius:16, padding:16, marginBottom:12, animation:`fadeUp .35s ease ${delay*.07}s forwards`, opacity:0 }}>
+<div style={{ display:"flex", gap:12, marginBottom:12, alignItems:"flex-start" }}>
+<div style={{ width:68, height:68, flexShrink:0, background:C.bg3, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", fontSize:28 }}>📦</div>
+<div style={{ flex:1, minWidth:0 }}>
+<div style={{ fontSize:10, fontWeight:700, color:C.blue3, textTransform:"uppercase", letterSpacing:.5, marginBottom:2 }}>{p.brand||""} · {p.cat||""}</div>
+<div style={{ fontWeight:700, fontSize:14, lineHeight:1.3, marginBottom:3 }}>{p.name}</div>
+<div style={{ fontSize:11, color:C.yellow }}>{"★".repeat(Math.floor(p.rating||4))} {p.rating||"4.5"} <span style={{ color:C.muted, fontSize:10 }}>({(p.reviews||0).toLocaleString()})</span></div>
+</div>
+<div style={{ fontFamily:"Rajdhani,sans-serif", fontWeight:700, fontSize:22, color:C.yellow, flexShrink:0 }}>{priceStr}</div>
+</div>
+<div style={{ fontSize:13, color:C.muted, lineHeight:1.6, marginBottom:12 }}>{p.desc}</div>
+{p.specs && (
+<div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:12 }}>
+{Object.entries(p.specs).slice(0,6).map(([k,v]) => (
+<div key={k} style={{ background:C.bg3, borderRadius:8, padding:"8px 10px" }}>
+<div style={{ fontSize:10, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:.4 }}>{k}</div>
+<div style={{ fontSize:13, fontWeight:700 }}>{v}</div>
+</div>
+))}
+</div>
+)}
+{p.tip && (
+<div style={{ background:"rgba(0,110,255,.06)", border:`1px solid rgba(0,110,255,.12)`, borderLeft:`3px solid ${C.blue2}`, borderRadius:8, padding:"10px 12px", marginBottom:12 }}>
+<div style={{ fontSize:11, fontWeight:700, color:C.blue3, marginBottom:4 }}>👷 Medewerkerstip</div>
+<div style={{ fontSize:12, color:C.muted, lineHeight:1.55 }}>{p.tip}</div>
+</div>
+)}
+<div style={{ display:"flex", gap:8 }}>
+<button onClick={()=>{setSaved(s=>!s);onSave();}} style={{ flex:1, padding:10, borderRadius:10, border:`1px solid ${C.border}`, background:C.surf2, color:C.text, fontWeight:700, fontSize:13, cursor:"pointer" }}>{saved?"❤️ Opgeslagen":"🤍 Opslaan"}</button>
+<button onClick={onDetail} style={{ flex:1, padding:10, borderRadius:10, border:"none", background:`linear-gradient(135deg,${C.navy},${C.blue2})`, color:"white", fontWeight:700, fontSize:13, cursor:"pointer" }}>ℹ️ Details</button>
+</div>
+</div>
+);
+}
+
+function CompareTable({ products, fmt, stars }) {
+const allKeys = […new Set(products.flatMap(p => Object.keys(p.specs||{})))];
+return (
+<div style={{ overflowX:"auto" }}>
+<table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, minWidth:340 }}>
+<thead>
+<tr>{["Eigenschap",…products.map(p=>p.name.substring(0,16)+"…")].map((h,i)=><th key={i} style={{ background:C.navy, color:"white", padding:"9px 12px", textAlign:"left", fontSize:12 }}>{h}</th>)}</tr>
+</thead>
+<tbody>
+<tr><td style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}` }}><strong>Prijs</strong></td>{products.map((p,i)=><td key={i} style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, color:C.yellow, fontWeight:700 }}>{fmt(p.price)}</td>)}</tr>
+<tr><td style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}` }}><strong>Beoordeling</strong></td>{products.map((p,i)=><td key={i} style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, color:C.yellow }}>{stars(p.rating)} {p.rating}</td>)}</tr>
+{allKeys.map(k=>(
+<tr key={k}><td style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}` }}>{k}</td>{products.map((p,i)=><td key={i} style={{ padding:"9px 12px", borderBottom:`1px solid ${C.border}`, color:C.text }}>{p.specs?.[k]||"--"}</td>)}</tr>
+))}
+</tbody>
+</table>
+</div>
+);
+}
